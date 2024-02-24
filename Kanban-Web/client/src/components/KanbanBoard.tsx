@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { todoTasks, doneTasks, inProgressTasks } from '../app/mocked-data';
 import Column from "./column";
+import { Button } from "@/components/ui/button"
+
+
 
 type TaskInterface = {
   userId: number;
@@ -11,7 +14,7 @@ type TaskInterface = {
 }
 
 export default function KanbanBoard() {
-  //typando os estados todo, dono e inprogress
+  //typando os estados todo, done e inprogress
   const [Todo, setTodoTasks] = useState<TaskInterface[]>([]);
   const [Done, setDoneTasks] = useState<TaskInterface[]>([]);
   const [InProgress, setInProgressTasks] = useState<TaskInterface[]>([]);
@@ -148,14 +151,31 @@ export default function KanbanBoard() {
     }
   };
 
+  const countTasks = (tasks: TaskInterface[]) => {
+    return tasks.length;
+  };
+
   
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <h1 style={{ textAlign: "center", padding: 20 }}>PROGRESS BOARD</h1>
-      <div className="flex justify-between items-center row-auto w-[1300px] container">
-        <Column title={"TO DO"} tasks={Todo} id={"todo"} />
-        <Column title={"IN PROGRESS"} tasks={InProgress} id={"inProgress"} />
-        <Column title={"DONE"} tasks={Done} id={"done"} />
+      <h1 className="text-center p-4 text-3xl font-bold text-gray-800 shadow-md">Progress Board</h1>
+
+      <div className="fixed top-4 right-4">
+        <Button>DashBoard</Button>
+      </div>
+
+      <div className="flex justify-center gap-8 items-center row-auto w-[1300px] container mt-20">
+        <Column title="TO DO" tasks={Todo} id="todo"> 
+          <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
+        </Column>
+
+        <Column title="IN PROGRESS" tasks={InProgress} id="inProgress"> 
+          <span className="text-lg text-gray-500"> | {countTasks(InProgress)}</span> 
+        </Column>
+
+        <Column title="DONE" tasks={Done} id="done"> 
+          <span className="text-lg text-gray-500"> | {countTasks(Done)}</span> 
+        </Column>
       </div>
     </DragDropContext>
   );

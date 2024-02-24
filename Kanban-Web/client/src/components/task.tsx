@@ -19,10 +19,7 @@ export default function Task({ task, index }: { task: TaskInterface, index: numb
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    
                 >
-                    
-                    
                     <p>{task.title}</p>
                 </div>
             )}
