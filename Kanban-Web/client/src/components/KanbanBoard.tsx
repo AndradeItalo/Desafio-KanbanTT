@@ -164,7 +164,7 @@ export default function KanbanBoard() {
         <Button>DashBoard</Button>
       </div>
 
-      <div className="flex justify-center gap-8 items-center row-auto w-[1300px] container mt-20">
+      <div className="flex justify-center gap-8 row-auto w-[1300px] container mt-20">
         <Column title="TO DO" tasks={Todo} id="todo"> 
           <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
         </Column>
