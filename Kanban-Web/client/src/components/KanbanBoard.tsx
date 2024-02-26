@@ -1,10 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
-import { todoTasks, doneTasks, inProgressTasks } from '../app/mocked-data';
+
 import Column from "./column";
 import { Button } from "@/components/ui/button"
+import { ApolloProvider, ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 
 
+const TASKS = gql`
+  query getTasks{
+    getTasks {
+      userId
+      id
+      index
+      title
+      completed
+    }
+  }
+`;
 
 type TaskInterface = {
   userId: number;
@@ -14,38 +26,49 @@ type TaskInterface = {
 }
 
 export default function KanbanBoard() {
+  const { loading, error, data } = useQuery(TASKS);
   //typando os estados todo, done e inprogress
   const [Todo, setTodoTasks] = useState<TaskInterface[]>([]);
   const [Done, setDoneTasks] = useState<TaskInterface[]>([]);
   const [InProgress, setInProgressTasks] = useState<TaskInterface[]>([]);
 
   useEffect(() => {
-    //vendo se há algo no localstorage (se as tasks já foram modificadas "todo, done, inprogress")
-    const savedTodoTasks = localStorage.getItem("todoTasks");
-    const savedInprogressTasks = localStorage.getItem("inProgressTasks");
-    const savedDoneTasks = localStorage.getItem("doneTasks");
-    
-    if(savedTodoTasks){ //se já há tarefas ToDo no localstorage, renderizo a página com essas informações.
-      setTodoTasks(JSON.parse(savedTodoTasks));
-    } else { //se n tiver, incializo com os dados mockados
-      localStorage.setItem("todoTasks", JSON.stringify(todoTasks));
-      setTodoTasks(todoTasks);
+    if (data && data.getTasks) {
+      const tasksArray = Object.values(data.getTasks).map((task: any) => ({
+        userId: parseInt(task.userId),
+        id: task.id,
+        index: task.index,
+        title: task.title,
+        completed: task.completed
+      }));
+  
+      // Verificando se o localStorage está vazio
+      const savedTodoTasks = localStorage.getItem("todoTasks");
+      const savedInProgressTasks = localStorage.getItem("inProgressTasks");
+      const savedDoneTasks = localStorage.getItem("doneTasks");
+  
+      if (!savedTodoTasks) { // Se o localStorage estiver vazio, use tasksArray
+        localStorage.setItem("todoTasks", JSON.stringify(tasksArray));
+        setTodoTasks(tasksArray);
+      } else { // Se houver algo no localStorage, use os valores do localStorage
+        setTodoTasks(JSON.parse(savedTodoTasks));
+      }
+  
+      if (!savedInProgressTasks) {
+        localStorage.setItem("inProgressTasks", JSON.stringify([]));
+        setInProgressTasks([]);
+      } else {
+        setInProgressTasks(JSON.parse(savedInProgressTasks));
+      }
+  
+      if (!savedDoneTasks) {
+        localStorage.setItem("doneTasks", JSON.stringify([]));
+        setDoneTasks([]);
+      } else {
+        setDoneTasks(JSON.parse(savedDoneTasks));
+      }
     }
-
-    if(savedInprogressTasks){  //se já há tarefas InProgress no localstorage, renderizo a página com essas informações.
-      setInProgressTasks(JSON.parse(savedInprogressTasks));
-    } else {
-      localStorage.setItem("inProgressTasks", JSON.stringify(inProgressTasks));
-      setInProgressTasks(inProgressTasks);
-    }
-
-    if(savedDoneTasks){ //se já há tarefas Done no localstorage, renderizo a página com essas informações.
-      setDoneTasks(JSON.parse(savedDoneTasks));
-    } else {
-      localStorage.setItem("doneTasks", JSON.stringify(doneTasks));
-      setDoneTasks(doneTasks)
-    }
-  }, []);
+  }, [data]);
   
   //função q é ativada quando o usuário arrasta o item
   const handleDragEnd = (result: DropResult) => {
@@ -158,7 +181,7 @@ export default function KanbanBoard() {
   
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
-      <h1 className="text-center p-4 text-3xl font-bold text-gray-800 shadow-md">Progress Board</h1>
+      <h1 className="text-center p-4 text-3xl font-bold text-gray-800 shadow-md bg-blue-200">Progress Board TT</h1>
 
       <div className="fixed top-4 right-4">
         <Button>DashBoard</Button>
