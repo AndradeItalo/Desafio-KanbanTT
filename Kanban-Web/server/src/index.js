@@ -8,64 +8,55 @@ const typeDefs = require('./schema');
 const tasks = [
   {
     userId: 1,
-    id: '1',
-    index: 0,
+    id: '0',
     title: "Task 1 ",
     completed: false
   },
   {
     userId: 1,
-    id: '2',
-    index: 1,
+    id: '1',
     title: "Task 2",
     completed: false
   },
   {
     userId: 1,
-    id: '3',
-    index: 2,
+    id: '2',
     title: "Task 3",
     completed: false
   },
   {
     userId: 1,
-    id: '4',
-    index: 3,
+    id: '3',
     title: "Task 4",
-    completed: true
+    completed: false
+  },
+  {
+    userId: 1,
+    id: '4',
+    title: "Task 5",
+    completed: false
   },
   {
     userId: 1,
     id: '5',
-    index: 4,
-    title: "Task 5",
-    completed: true
+    title: "Task 6",
+    completed: false
   },
   {
     userId: 1,
     id: '6',
-    index: 5,
-    title: "Task 6",
-    completed: true
-  },
-  {
-    userId: 1,
-    id: '7',
-    index: 6,
     title: "Task 7",
     completed: false
   },
   {
     userId: 1,
-    id: '8',
-    index: 7,
+    id: '7',
     title: "Task 8",
     completed: false
   },
   {
     userId: 1,
-    id: '9',
-    index: 8,
+    id: '8',
     title: "Task 9",
     completed: false
   },

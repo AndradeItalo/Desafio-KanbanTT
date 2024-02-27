@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 
 import Column from "./column";
-import { Button } from "@/components/ui/button"
 import { ApolloProvider, ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import { ScrollArea } from "@/components/ui/scroll-area"
+
 
 
 const TASKS = gql`
@@ -11,7 +12,6 @@ const TASKS = gql`
     getTasks {
       userId
       id
-      index
       title
       completed
     }
@@ -23,6 +23,7 @@ type TaskInterface = {
   id: number;
   title: string;
   completed: boolean;
+  completionDate?: string; // Adiciona a propriedade completionDate
 }
 
 export default function KanbanBoard() {
@@ -37,10 +38,12 @@ export default function KanbanBoard() {
       const tasksArray = Object.values(data.getTasks).map((task: any) => ({
         userId: parseInt(task.userId),
         id: task.id,
-        index: task.index,
         title: task.title,
-        completed: task.completed
+        completed: task.completed,
+        completionDate: task.completionDate
       }));
+
+
   
       // Verificando se o localStorage está vazio
       const savedTodoTasks = localStorage.getItem("todoTasks");
@@ -70,10 +73,14 @@ export default function KanbanBoard() {
     }
   }, [data]);
   
+
   //função q é ativada quando o usuário arrasta o item
   const handleDragEnd = (result: DropResult) => {
+
     const { destination, source, draggableId } = result;
-  
+    //console.log('draggableId:', draggableId);
+    //console.log('Tipo de draggableId:', typeof draggableId);
+
     if (!destination) { //se for arrastada p um lugar que não existe, retorna a função sem fazer nada
       return;
     }
@@ -81,9 +88,10 @@ export default function KanbanBoard() {
     const sourceColumn = getColumnData(source.droppableId); //pegando a coluna de origem da task arrastada
     const destinationColumn = getColumnData(destination.droppableId); //coluna de destino da task arrastada
     const draggedTask = sourceColumn.find(
-      (task: TaskInterface) => task.id === parseInt(draggableId)
+      (task: TaskInterface) => task.id.toString() === draggableId
     );
-  
+    
+    
     if (!draggedTask) { //caso seja uma tarefa inexistente
       return;
     }
@@ -93,6 +101,7 @@ export default function KanbanBoard() {
       const updatedColumn = Array.from(sourceColumn);
       updatedColumn.splice(source.index, 1); // Remove da posição atual
       updatedColumn.splice(destination.index, 0, draggedTask); // Insere na nova posição
+      
       // Atualiza o estado da coluna correspondente & localstorage
       switch (destination.droppableId) {
         case "todo":
@@ -115,12 +124,48 @@ export default function KanbanBoard() {
       const updatedSourceColumn = [...sourceColumn];
       updatedSourceColumn.splice(source.index, 1); // Remove da posição atual
   
-      const updatedDestinationColumn = [...destinationColumn];
+      let updatedDestinationColumn = [...destinationColumn];
       updatedDestinationColumn.splice(destination.index, 0, draggedTask); // Insere na nova posição
   
+
+      //console.log(destination.droppableId)
+      if (destination.droppableId === 'done') { // Se a tarefa estiver sendo movida para a coluna Done
+        const completionDate = new Date().toISOString();
+        const updatedTask = { ...draggedTask, completed: true, completionDate }; // Marcar como concluída
+      
+        // Atualiza a tarefa na coluna "done"
+        const updatedColumn = updatedDestinationColumn.map(task =>
+          task.id === updatedTask.id ? updatedTask : task
+        );
+
+        // Define o estado e atualiza o armazenamento local
+        setDoneTasks(updatedColumn);
+        updateLocalStorage('doneTasks', updatedColumn);
+        updatedDestinationColumn = updatedColumn;
+
+      }
+      else if (source.droppableId === 'done') {
+
+        const updatedTask = { ...draggedTask, completed: false };
+
+        const updatedColumn = updatedDestinationColumn.map(task =>
+          task.id === updatedTask.id ? updatedTask : task
+        );
+
+        updatedDestinationColumn = updatedColumn;
+        setDoneTasks(getColumnData('done').map(task =>
+          task.id === updatedTask.id ? updatedTask : task
+        ));
+      
+        updateLocalStorage('doneTasks', getColumnData('done').map(task =>
+          task.id === updatedTask.id ? updatedTask : task
+        ));
+      }
+
+      console.log('aqui',updatedDestinationColumn)
       // Atualiza os estados das colunas & localstorage
       switch (source.droppableId) {
-        case "todo":
+        case "todo":       
           setTodoTasks(updatedSourceColumn);
           updateLocalStorage("todoTasks", updatedSourceColumn);
           break;
@@ -135,7 +180,8 @@ export default function KanbanBoard() {
         default:
           break;
       }
-  
+      
+
       switch (destination.droppableId) {
         case "todo":
           setTodoTasks(updatedDestinationColumn);
@@ -148,6 +194,7 @@ export default function KanbanBoard() {
         case "done":
           setDoneTasks(updatedDestinationColumn);
           updateLocalStorage("doneTasks", updatedDestinationColumn);
+          //console.log('entrou',localStorage.getItem('doneTasks'))
           break;
         default:
           break;
@@ -155,10 +202,13 @@ export default function KanbanBoard() {
     }
   };
 
+
   // Função auxiliar para atualizar o localStorage
   const updateLocalStorage = (key: string, data: TaskInterface[]) => {
     localStorage.setItem(key, JSON.stringify(data));
+    console.log('oi', localStorage.getItem('doneTasks'));
   };
+  
   
   //pegando toda a coluna com base no ID (todo, inProgress, done)
   const getColumnData = (columnId: string) => {
@@ -180,26 +230,23 @@ export default function KanbanBoard() {
 
   
   return (
+    
     <DragDropContext onDragEnd={handleDragEnd}>
-      <h1 className="text-center p-4 text-3xl font-bold text-gray-800 shadow-md bg-blue-200">Progress Board TT</h1>
+      <ScrollArea>
+        <div className="flex justify-center gap-8 row-auto w-[1300px] container mt-20 mb-8">
+          <Column title="TO DO" tasks={Todo} id="todo"> 
+            <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
+          </Column>
 
-      <div className="fixed top-4 right-4">
-        <Button>DashBoard</Button>
-      </div>
+          <Column title="IN PROGRESS" tasks={InProgress} id="inProgress"> 
+            <span className="text-lg text-gray-500"> | {countTasks(InProgress)}</span> 
+          </Column>
 
-      <div className="flex justify-center gap-8 row-auto w-[1300px] container mt-20">
-        <Column title="TO DO" tasks={Todo} id="todo"> 
-          <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
-        </Column>
-
-        <Column title="IN PROGRESS" tasks={InProgress} id="inProgress"> 
-          <span className="text-lg text-gray-500"> | {countTasks(InProgress)}</span> 
-        </Column>
-
-        <Column title="DONE" tasks={Done} id="done"> 
-          <span className="text-lg text-gray-500"> | {countTasks(Done)}</span> 
-        </Column>
-      </div>
+          <Column title="DONE" tasks={Done} id="done"> 
+            <span className="text-lg text-gray-500"> | {countTasks(Done)}</span> 
+          </Column>
+        </div>
+      </ScrollArea>
     </DragDropContext>
   );
 }

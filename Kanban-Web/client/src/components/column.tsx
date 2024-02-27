@@ -2,11 +2,13 @@ import React from "react";
 import { Draggable, Droppable } from "react-beautiful-dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+
 type TaskInterface = {
   userId: number;
   id: number;
   title: string;
   completed: boolean;
+  completionDate?: string;
 }
 
 // Defina um tipo explícito para columnBackgroundStyles
@@ -46,6 +48,7 @@ export default function Column({ title, tasks, id, children}: { title: string, t
                     <Card className={`border border-gray-300 p-2 ${snapshot.isDragging ? 'bg-gray-100' : ''}`}>
                       <CardContent>
                         <p>{task.title}</p>
+                        {task.completed && <p>Concluída</p>}
                       </CardContent>
                     </Card>
                   </div>
