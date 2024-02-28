@@ -72,7 +72,7 @@ const LineChart: React.FC = () => {
 
   return (
     <div>
-      {/* Renderize o componente Chart e passe os dados e opções */}
+
       <Chart options={chartData} series={chartData.series} type="line" height={350} />
     </div>
   );

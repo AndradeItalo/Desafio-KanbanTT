@@ -4,7 +4,10 @@ import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import Column from "./column";
 import { ApolloProvider, ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 import { ScrollArea } from "@/components/ui/scroll-area"
-
+import { ModeToggle } from "./mode-toggle";
+import { useTheme } from "next-themes";
+import { Button } from "./ui/button";
+import { MoonIcon, SunIcon } from "@radix-ui/react-icons"
 
 
 const TASKS = gql`
@@ -32,6 +35,8 @@ export default function KanbanBoard() {
   const [Todo, setTodoTasks] = useState<TaskInterface[]>([]);
   const [Done, setDoneTasks] = useState<TaskInterface[]>([]);
   const [InProgress, setInProgressTasks] = useState<TaskInterface[]>([]);
+
+  const { setTheme} = useTheme();
 
   useEffect(() => {
     if (data && data.getTasks) {
@@ -232,8 +237,7 @@ export default function KanbanBoard() {
   return (
     
     <DragDropContext onDragEnd={handleDragEnd}>
-      <ScrollArea>
-        <div className="flex justify-center gap-8 row-auto w-[1300px] container mt-20 mb-8">
+        <div className="flex flex-row justify-center gap-8 row-auto w-[1300px] container mt-20 mb-8">
           <Column title="TO DO" tasks={Todo} id="todo"> 
             <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
           </Column>
@@ -246,7 +250,7 @@ export default function KanbanBoard() {
             <span className="text-lg text-gray-500"> | {countTasks(Done)}</span> 
           </Column>
         </div>
-      </ScrollArea>
+      
     </DragDropContext>
   );
 }

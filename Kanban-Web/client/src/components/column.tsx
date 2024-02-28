@@ -1,6 +1,8 @@
 import React from "react";
 import { Draggable, Droppable } from "react-beautiful-dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 
 type TaskInterface = {
@@ -11,7 +13,7 @@ type TaskInterface = {
   completionDate?: string;
 }
 
-// Defina um tipo explícito para columnBackgroundStyles
+// Defina diferentes estilos de fundo com base no ID da coluna
 type ColumnBackgroundStyles = {
   [key: string]: string;
 }
@@ -24,18 +26,23 @@ export default function Column({ title, tasks, id, children}: { title: string, t
     done: "bg-green-200"
   };
 
+  // Obtém o estilo de fundo com base no ID da coluna
+  const columnBackgroundStyle = columnBackgroundStyles[id];
+
   return (
-    <Droppable droppableId={id} type="TASK">
+    <Droppable droppableId={id} type="TASK" >
       {(provided, snapshot) => (
-        <div
+        <Card 
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`w-[300px] p-2 rounded-lg ${columnBackgroundStyles[id]}`}
+          className={cn(`w-[300px] h-fit min-h-40`, {'bg-slate-400': snapshot.isDraggingOver})}
         >
-          <CardHeader>
+          <CardHeader className={columnBackgroundStyle}>
             <CardTitle>{title}{children}</CardTitle>
+            
           </CardHeader>
-          <CardContent>
+          <Separator/>
+          <CardContent className="mt-3">
             {tasks.map((task, index) => (
               <Draggable key={task.id} draggableId={`${task.id}`} index={index}>
                 {(provided, snapshot) => (
@@ -43,9 +50,9 @@ export default function Column({ title, tasks, id, children}: { title: string, t
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    className={`mb-2 ${snapshot.isDragging ? 'bg-gray-100' : ''}`}
+                    className={`mb-2`}
                   >
-                    <Card className={`border border-gray-300 p-2 ${snapshot.isDragging ? 'bg-gray-100' : ''}`}>
+                    <Card className={cn(`border border-gray-300 p-2`, {'bg-gray-300': snapshot.isDropAnimating})}>
                       <CardContent>
                         <p>{task.title}</p>
                         {task.completed && <p>Concluída</p>}
@@ -57,7 +64,7 @@ export default function Column({ title, tasks, id, children}: { title: string, t
             ))}
             {provided.placeholder}
           </CardContent>
-        </div>
+        </Card>
       )}
     </Droppable>
   );
