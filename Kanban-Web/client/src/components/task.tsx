@@ -1,5 +1,6 @@
 import React from "react";
 import { Draggable } from "react-beautiful-dnd";
+import { BsPencilSquare } from 'react-icons/bs';
 
 type TaskInterface = {
     userId: number;

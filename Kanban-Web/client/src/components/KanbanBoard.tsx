@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
-
 import Column from "./column";
 import { ApolloProvider, ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -8,7 +7,10 @@ import { ModeToggle } from "./mode-toggle";
 import { useTheme } from "next-themes";
 import { Button } from "./ui/button";
 import { MoonIcon, SunIcon } from "@radix-ui/react-icons"
-
+import TaskForm from "./newform";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 
 const TASKS = gql`
   query getTasks{
@@ -21,6 +23,8 @@ const TASKS = gql`
   }
 `;
 
+type StatusTask = "todo" | "inprogress" | "done";
+
 type TaskInterface = {
   userId: number;
   id: number;
@@ -29,6 +33,8 @@ type TaskInterface = {
   completionDate?: string; // Adiciona a propriedade completionDate
 }
 
+
+
 export default function KanbanBoard() {
   const { loading, error, data } = useQuery(TASKS);
   //typando os estados todo, done e inprogress
@@ -36,7 +42,78 @@ export default function KanbanBoard() {
   const [Done, setDoneTasks] = useState<TaskInterface[]>([]);
   const [InProgress, setInProgressTasks] = useState<TaskInterface[]>([]);
 
-  const { setTheme} = useTheme();
+  // adiciona nova task
+  const handleNewTaskSubmit = (newTaskTitle: string, status: StatusTask) => {
+    // Obter a data e hora atual da task criada
+    const currentDate = new Date();
+    // Formatar a data
+    const completionDate = currentDate.toISOString();
+  
+    const newTask: TaskInterface = {
+      userId: 1,
+      id: Math.floor(Math.random() * 1000),
+      title: newTaskTitle,
+      completed: status === "done", // marca como concluída se estiver sendo adicionada diretamente à coluna "DONE"
+      completionDate: completionDate
+    };
+  
+    // determinar a coluna com base no status selecionado
+    let targetColumn: TaskInterface[] = [];
+    switch (status) {
+      case "todo":
+        targetColumn = Todo;
+        break;
+      case "inprogress":
+        targetColumn = InProgress;
+        break;
+      case "done":
+        targetColumn = Done;
+        break;
+      default:
+        targetColumn = Todo; // por padrão, adicionar à coluna "TO DO"
+    }
+  
+    // adicionar a nova tarefa à coluna correspondente
+    targetColumn.push(newTask);
+  
+    // atualizar o estado da coluna correspondente e o armazenamento local
+    switch (status) {
+      case "todo":
+        setTodoTasks([...targetColumn]);
+        updateLocalStorage("todoTasks", [...targetColumn]);
+        break;
+      case "inprogress":
+        setInProgressTasks([...targetColumn]);
+        updateLocalStorage("inProgressTasks", [...targetColumn]);
+        break;
+      case "done":
+        setDoneTasks([...targetColumn]);
+        updateLocalStorage("doneTasks", [...targetColumn]);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Defina uma função para atualizar o título da tarefa
+  const updateTaskTitle = (taskId: number, newTitle: string) => {
+    // Determine a coluna correspondente com base no ID da coluna
+    const updatedTodo = Todo.map(task =>
+      task.id === taskId ? { ...task, title: newTitle } : task
+    );
+    setTodoTasks(updatedTodo);
+
+    const updatedInProgress = InProgress.map(task =>
+      task.id === taskId ? { ...task, title: newTitle } : task
+    );
+    setInProgressTasks(updatedInProgress);
+
+    const updatedDone = Done.map(task =>
+      task.id === taskId ? { ...task, title: newTitle } : task
+    );
+    setDoneTasks(updatedDone);
+  };
+
 
   useEffect(() => {
     if (data && data.getTasks) {
@@ -48,8 +125,6 @@ export default function KanbanBoard() {
         completionDate: task.completionDate
       }));
 
-
-  
       // Verificando se o localStorage está vazio
       const savedTodoTasks = localStorage.getItem("todoTasks");
       const savedInProgressTasks = localStorage.getItem("inProgressTasks");
@@ -235,22 +310,33 @@ export default function KanbanBoard() {
 
   
   return (
-    
     <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex flex-row justify-center gap-8 row-auto w-[1300px] container mt-20 mb-8">
-          <Column title="TO DO" tasks={Todo} id="todo"> 
-            <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
-          </Column>
 
-          <Column title="IN PROGRESS" tasks={InProgress} id="inProgress"> 
-            <span className="text-lg text-gray-500"> | {countTasks(InProgress)}</span> 
-          </Column>
+      <div className="flex flex-row justify-center gap-8 row-auto w-[1300px] container mt-20 mb-8">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button>Create new task</Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[350px]">
+          <TaskForm onSubmit={handleNewTaskSubmit} />
+        </PopoverContent>
+      </Popover>
+        <Column title="TO DO" tasks={Todo} id="todo" updateTaskTitle={updateTaskTitle}>
+          <span className="text-lg text-gray-500"> | {countTasks(Todo)}</span>
+        </Column>
 
-          <Column title="DONE" tasks={Done} id="done"> 
-            <span className="text-lg text-gray-500"> | {countTasks(Done)}</span> 
-          </Column>
-        </div>
+        <Column title="IN PROGRESS" tasks={InProgress} id="inProgress" updateTaskTitle={updateTaskTitle}>
+          <span className="text-lg text-gray-500"> | {countTasks(InProgress)}</span>
+        </Column>
+
+        <Column title="DONE" tasks={Done} id="done" updateTaskTitle={updateTaskTitle}>
+          <span className="text-lg text-gray-500"> | {countTasks(Done)}</span>
+        </Column>
+        
+      </div>
+
       
+       
     </DragDropContext>
   );
 }

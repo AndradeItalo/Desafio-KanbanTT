@@ -14,15 +14,15 @@ export const Navbar = () => {
   };
 
   return (
-    <nav className="bg-background p-1 h-[70px] flex justify-center items-center border-b-2">
-      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', width: '100%' }}>
-        <div style={{ listStyle: 'none', display: 'flex', flexGrow: 1, justifyContent: 'space-around' }}>
+    <nav className="bg-slate-500 p-1 h-[70px] w-full flex justify-center items-center border-b-2">
+      <div className="flex justify-around items-center w-full">
+        <div className="flex flex-grow justify-around">
           <ModeToggle/>
         </div>
-        <div onClick={() => handleNavigation('/')}>
+        <div>
           <h1 className="text-3xl font-bold">Kanban Board</h1>
         </div>
-        <div style={{ listStyle: 'none', display: 'flex', flexGrow: 1, justifyContent: 'space-around' }}>
+        <div className="flex flex-grow justify-around">
           <Button onClick={() => handleNavigation('/dashboard')}>DashBoard</Button>
         </div>
         <div>
