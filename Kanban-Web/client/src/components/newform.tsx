@@ -8,8 +8,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Label } from "./ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "./ui/input";
+
 
 type StatusTask = "todo" | "inprogress" | "done";
 
@@ -27,8 +35,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit }) => {
     setNewTaskTitle(e.target.value);
   };
 
-  const handleStatusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStatus(e.target.value as StatusTask); // Atualiza o status selecionado
+  const handleStatusChange = (selectedStatus: StatusTask) => {
+    setStatus(selectedStatus); // Atualiza o status selecionado
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,13 +82,16 @@ const TaskForm: React.FC<TaskFormProps> = ({ onSubmit }) => {
             </div>
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="status">Status</Label>
-              <Input
-                type="text"
-                id="taskStatus"
-                value={status}
-                onChange={handleStatusChange}
-                placeholder="Enter status: todo, inprogress, done"
-              />
+              <Select value={status} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todo">To Do</SelectItem>
+                  <SelectItem value="inprogress">In Progress</SelectItem>
+                  <SelectItem value="done">Done</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </form>
