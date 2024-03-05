@@ -1,163 +1,163 @@
 import React, { useEffect, useState } from "react";
-import { Text, View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import {
-  RenderItemParams,
-  ScaleDecorator,
-  NestableScrollContainer,
-  NestableDraggableFlatList
-} from "react-native-draggable-flatlist";
+import { Text, View, StyleSheet, TouchableOpacity} from "react-native";
+import { RenderItemParams, ScaleDecorator, NestableScrollContainer, NestableDraggableFlatList } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import AddTask from "./components/AddTask";
-import EditTask from "./components/EditTask";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import KanbanNavBar from "./components/navbar";
 import Header from "./components/Header";
 import { v4 as uuidv4 } from 'uuid';
 import { FontAwesome } from '@expo/vector-icons'; // Importe o componente de ícone
+import UpdateTask from "./components/updateDelete";
+import CreateTask from "./components/create";
 
 
 type KanbanData = {
-  todoData: Task[],
-  inProgressData: Task[],
-  doneData: Task[]
+  todo: Task[],
+  inProgress: Task[],
+  done: Task[]
 }
 
 type Task = {
-  key: string;
+  id: string;
   title: string;
-  listId: string; 
+  statusId: string; 
 };
 
-interface AddTaskButtonProps {
+interface ButtonProps {
   onPress: () => void;
 }
 
 export default function App() {
-  const [activeList, setActiveList] = useState<string | null>(null);
-  const [currentListId, setCurrentListId] = useState('')
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [currentstatusId, setCurrentstatusId] = useState('')
+  const [isCreateTask, setIsCreateTask] = useState(false); //toast de criar task
+  const [isEditToast, setIsEditToast] = useState(false); //toast de editar
 
-  const loadKanbanDataFromStorage = async (): Promise<KanbanData> => {
-      const jsonKanbanData = await AsyncStorage.getItem('KanbanData');
-      console.log("jsonKanbanData - loading: ", jsonKanbanData)
-      return jsonKanbanData ? JSON.parse(jsonKanbanData) : {
-        todoData: [],
-        inProgressData: [],
-        doneData: []
-      };
-    
+  //carregar os dados do kanban do armazenamento local
+  const loadKanban = async (): Promise<KanbanData> => { 
+    const storedKanbanData = await AsyncStorage.getItem('KanbanData');
+    return storedKanbanData ? JSON.parse(storedKanbanData) : {
+      todo: [],
+      inProgress: [],
+      done: []
+    };
   };
 
-  const [activeItemIds, setActiveItemIds] = useState<{ [key: string]: string | null }>({
-    todoData: null,
-    inProgressData: null,
-    doneData: null,
+  const [activeItemIds, setActiveItemIds] = useState<{ [id: string]: string | null }>({
+    todo: null,
+    inProgress: null,
+    done: null,
   });
-  
 
-  const initialTask = { key: '', title: '', listId: "" }
-  const initialKanbanData = {
-    todoData: [],
-    inProgressData: [],
-    doneData: []
+  const firstTask = { id: '', title: '', statusId: "" }
+  const firstKanbanData = {
+    todo: [],
+    inProgress: [],
+    done: []
   }
 
-  const [kanbanData, setKanbanData] = useState<KanbanData>(initialKanbanData);
-  const [currentItem, setCurrentItem] = useState<Task>(initialTask)
+  const [kanbanData, setKanbanData] = useState<KanbanData>(firstKanbanData);
+  const [currentItem, setCurrentItem] = useState<Task>(firstTask)
 
-  const fetchData = async () => {
-    const data = await loadKanbanDataFromStorage();
+  const loadData = async () => {
+    const data = await loadKanban();
     setKanbanData(data);
   };
 
   useEffect(() => {
-    fetchData();
+    loadData();
   }, []);
 
-
-  const handleAddTask = (taskData: Task) => {
-    const newTaskData = { ...taskData, key: uuidv4() }; // chave unica
-    let formattedData: Task[] = [];
-    let newKanbanData: KanbanData = initialKanbanData;
-    switch (taskData.listId) {
-      case 'todoData':
-        formattedData = [newTaskData, ...kanbanData.todoData];
-        newKanbanData = { ...kanbanData, todoData: formattedData };
-        setKanbanData(newKanbanData);
+  
+  const handleCreate = (taskData: Task) => {
+    const newTaskData = { ...taskData, id: uuidv4() }; // gera o id unico para cada task
+    const { statusId } = taskData; // pega qual a coluna que irá ser adicionada a nova task
+  
+    // Cria uma cópia do estado atual do kanban
+    const updatedKanbanData: KanbanData = {
+      todo: [...kanbanData.todo],
+      inProgress: [...kanbanData.inProgress],
+      done: [...kanbanData.done]
+    };
+  
+    // adiciona a nova tarefa à lista apropriada com base no statusId
+    switch (statusId) {
+      case 'todo':
+        updatedKanbanData.todo.unshift(newTaskData); 
         break;
-      case 'inProgressData':
-        formattedData = [newTaskData, ...kanbanData.inProgressData];
-        newKanbanData = { ...kanbanData, inProgressData: formattedData };
-        setKanbanData(newKanbanData);
+      case 'inProgress':
+        updatedKanbanData.inProgress.unshift(newTaskData); 
         break;
-      case 'doneData':
-        formattedData = [newTaskData, ...kanbanData.doneData];
-        newKanbanData = { ...kanbanData, doneData: formattedData };
-        setKanbanData(newKanbanData);
+      case 'done':
+        updatedKanbanData.done.unshift(newTaskData); 
         break;
       default:
         break;
     }
-    console.log("kanbandata:", newKanbanData);
-    setIsAddModalVisible(false);
-    saveLocalStorage(newKanbanData);
+  
+    setKanbanData(updatedKanbanData);//atualiza o estado com os novos dados do kanban
+    setIsCreateTask(false);    //fecha o toast de criação de tarefa
+    saveKanbanData(updatedKanbanData);//salva os dados do kanban no armazenamento local
   };
   
   
-  const editTask = (fromList: Task[], toList: Task[], taskKey: string, fromListName: string, toListName: string, taskData: Task) => {
   
-    const taskIndex = fromList.findIndex(task => task.key === taskKey);
-    if (taskIndex !== -1) {
-      const movedTask = fromList.splice(taskIndex, 1)[0];
-      toList = [taskData, ...toList]
+  const editTask = (sourceList: Task[], destinationList: Task[], taskId: string, sourceListName: string, destinationListName: string, taskData: Task) => {
+    const taskIndex = sourceList.findIndex(task => task.id === taskId); //encontra o índice da tarefa na lista de origem
   
+    if (taskIndex !== -1) {//verifica se a tarefa foi encontrada na lista de origem
+      const movedTask = sourceList.splice(taskIndex, 1)[0];
+      
+      //adiciona a tarefa atualizada à lista de destino
+      destinationList.unshift(taskData);
   
-      const newKanbanData = { ...kanbanData, [fromListName]: fromList, [toListName]: toList }
-      setKanbanData(newKanbanData)
-      saveLocalStorage(newKanbanData) // Salvar os dados atualizados aqui
+      //atualiza o kanban com as listas editadas
+      const updatedKanbanData: KanbanData = {
+        ...kanbanData,
+        [sourceListName]: [...sourceList],
+        [destinationListName]: [...destinationList]
+      };
+      
+      //atualiza o estado do kanban
+      setKanbanData(updatedKanbanData);
+      
+      //salva os dados atualizados no armazenamento local
+      saveKanbanData(updatedKanbanData);
     }
   };
   
-  const handleDragEnd = (data: Task[], listId: string) => {
-    console.log('LISTA ID: ',listId)
-    const updatedData = data.map((item) => ({
-      ...item,
-      listId: listId,
-    }));
+  const handleDragEnd = (data: Task[], statusId: string) => {
+    const updatedData = data.map(item => ({ ...item, statusId }));//mapeia os dados atualizados com o novo statusId
   
-    const updatedKanbanData = {
-      ...kanbanData,
-      [listId]: updatedData,
-    };
+    // Atualiza o kanbanData apenas com o statusId atualizado
+    const updatedKanbanData = { ...kanbanData, [statusId]: updatedData };
   
-    setKanbanData(updatedKanbanData); // Atualize o estado com os novos dados
-    saveLocalStorage(updatedKanbanData); // Salve os dados atualizados no armazenamento local
-    setActiveItemIds({ ...activeItemIds, [listId]: null }); // Limpe o estado de item ativo
+    setKanbanData(updatedKanbanData);                          //atualiza o estado com os novos dados
+    saveKanbanData(updatedKanbanData);                        //salva os dados atualizados no armazenamento local
+    setActiveItemIds({ ...activeItemIds, [statusId]: null });//limpa o estado de item ativo
   
-    return updatedKanbanData; // Retorna os dados atualizados
+    // Retorna os dados atualizados
+    return updatedKanbanData;
   };
   
-  
-
-  const EditTaskButton: React.FC<AddTaskButtonProps> = ({ onPress }) => {
+  const UpdateTaskButton: React.FC<ButtonProps> = ({ onPress }) => {
     return (
-      <TouchableOpacity>
-        <FontAwesome name="edit" size={24} color="black" style={styles.icon} onPress={onPress} />
+      <TouchableOpacity onPress={onPress}>
+        <FontAwesome name="edit" size={24} color="black" style={styles.icon} />
       </TouchableOpacity>
-      
     );
   };
+  
 
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<Task>, listId: string) => {
-    const isActiveForColumn = isActive && activeItemIds[listId] === item.key;
+  const renderTask = ({ item, drag, isActive }: RenderItemParams<Task>, statusId: string) => {
+    const isActiveForColumn = isActive && activeItemIds[statusId] === item.id;
   
     return (
       <ScaleDecorator>
         <TouchableOpacity
           onLongPress={() => {
             drag();
-            setActiveItemIds({ ...activeItemIds, [listId]: item.key });
+            setActiveItemIds({ ...activeItemIds, [statusId]: item.id });
           }}
           disabled={isActiveForColumn}
           style={[
@@ -167,7 +167,7 @@ export default function App() {
         >
           <View style={styles.cardContent}>
             <Text style={styles.cardTitle}>{item.title}</Text>
-            <EditTaskButton onPress={() => { setIsEditModalVisible(true); setCurrentItem(item); }} />
+            <UpdateTaskButton onPress={() => { setIsEditToast(true); setCurrentItem(item); }} />
           </View>
         </TouchableOpacity>
       </ScaleDecorator>
@@ -175,9 +175,8 @@ export default function App() {
   };
 
 
-  const saveLocalStorage = async (kanbanData: KanbanData) => {
+  const saveKanbanData = async (kanbanData: KanbanData) => {
       const jsonKanbanData = JSON.stringify(kanbanData);
-      console.log('dados',jsonKanbanData);
       await AsyncStorage.setItem('KanbanData', jsonKanbanData);
   };
 
@@ -185,19 +184,20 @@ export default function App() {
     
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#F0F8FF" }}>
 
-      <NestableScrollContainer style={{ backgroundColor: "#F0F8FF" }}>
-        <AddTask
-          isVisible={isAddModalVisible}
-          onClose={() => setIsAddModalVisible(false)}
-          onSave={handleAddTask}
-          listId={currentListId}
+      <NestableScrollContainer>
+        <CreateTask
+          isVisible={isCreateTask}
+          closeModal={() => setIsCreateTask(false)}
+          saveChanges={handleCreate}
+          statusId={currentstatusId}
         />
-        <EditTask
-          isVisible={isEditModalVisible}
-          onClose={() => setIsEditModalVisible(false)}
-          onSave={editTask}
-          currentItem={currentItem}
+        <UpdateTask
+          isVisible={isEditToast}
+          closeModal={() => setIsEditToast(false)}
+          saveChanges={editTask}
+          currentTask={currentItem}
           kanbanData={kanbanData}
+          
         />
 
         <View>
@@ -205,40 +205,39 @@ export default function App() {
         </View>
 
         <View style={{paddingTop: 15}}>
-          <Header text={"TO DO"} onPressAdd={() => { setIsAddModalVisible(true); setCurrentListId('todoData'); }} />
-
+          <Header text={"TO DO"} onPressAdd={() => { setIsCreateTask(true); setCurrentstatusId('todo'); }} />
           <NestableDraggableFlatList
             style={{ minHeight: 200 }}
-            data={kanbanData.todoData}
-            renderItem={(params) => renderItem(params, 'todoData')} // Passando 'todoData' como o listId
-            keyExtractor={(item) => item.key}
+            data={kanbanData.todo}
+            renderItem={(params) => renderTask(params, 'todo')} 
+            keyExtractor={(item) => item.id}
             onDragEnd={({ data }) => {
-              setKanbanData(handleDragEnd(data, "todoData"));
-              setActiveList(null);
+              setKanbanData(handleDragEnd(data, "todo"));
+              setActiveItemId(null);
             }}
           />
 
-          <Header text={"IN PROGRESS"} onPressAdd={() => { setIsAddModalVisible(true); setCurrentListId('inProgressData'); }} />
+          <Header text={"IN PROGRESS"} onPressAdd={() => { setIsCreateTask(true); setCurrentstatusId('inProgress'); }} />
           <NestableDraggableFlatList
             style={{ minHeight: 200 }}
-            data={kanbanData.inProgressData}
-            renderItem={(params) => renderItem(params, 'inProgressData')} // Passando 'inProgressData' como o listId
-            keyExtractor={(item) => item.key}
+            data={kanbanData.inProgress}
+            renderItem={(params) => renderTask(params, 'inProgress')} 
+            keyExtractor={(item) => item.id}
             onDragEnd={({ data }) => {
-              setKanbanData(handleDragEnd(data, "inProgressData"));
-              setActiveList(null);
+              setKanbanData(handleDragEnd(data, "inProgress"));
+              setActiveItemId(null);
             }}
           />
 
-          <Header text={"DONE"} onPressAdd={() => { setIsAddModalVisible(true); setCurrentListId('doneData'); }} />
+          <Header text={"DONE"} onPressAdd={() => { setIsCreateTask(true); setCurrentstatusId('done'); }} />
           <NestableDraggableFlatList
             style={{ minHeight: 200 }}
-            data={kanbanData.doneData}
-            renderItem={(params) => renderItem(params, 'doneData')} // Passando 'doneData' como o listId
-            keyExtractor={(item) => item.key}
+            data={kanbanData.done}
+            renderItem={(params) => renderTask(params, 'done')} 
+            keyExtractor={(item) => item.id}
             onDragEnd={({ data }) => {
-              setKanbanData(handleDragEnd(data, "doneData"));
-              setActiveList(null);
+              setKanbanData(handleDragEnd(data, "done"));
+              setActiveItemId(null);
             }}
           />
         </View>
@@ -258,10 +257,10 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 16,
     padding: 16,
-    elevation: 5, // Sombra
+    elevation: 5
   },
   activeCardContainer: {
-    borderColor: "#2196F3", // borda quando o card está ativo
+    borderColor: "#2196F3", //cor da borda quando o card está ativo
     borderWidth: 2,
   },
   cardContent: {
@@ -275,4 +274,3 @@ const styles = StyleSheet.create({
     color: "#333333",
   },
 });
-
