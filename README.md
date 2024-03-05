@@ -9,8 +9,8 @@
 ## COMO RODAR?
 
 ### Kanban WEB 
-#### Na pasta client: npm run dev
-#### Na pasta server: nodemon src/index.js
+##### Na pasta client: npm run dev
+##### Na pasta server: nodemon src/index.js
 
 ### Kanban MOBILE
-#### Na pasta kanbanmobile: npx expo start
+##### Na pasta kanbanmobile: npx expo start
